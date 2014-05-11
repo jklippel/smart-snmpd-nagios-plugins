@@ -1,0 +1,170 @@
+use strict;
+use warnings;
+
+use FindBin ();
+use lib ("$FindBin::Bin/../testlib");
+use lib $FindBin::Bin;
+
+use Getopt::Long qw(:config bundling);
+use Data::Dumper ('Dumper');
+use Pod::Usage   ('pod2usage');
+use File::Basename qw(basename dirname);
+use File::Spec;
+
+use run_tests    qw(plugin_ok plugin_cmp_ok);
+
+use Test::More;
+
+my $have_dbi = 0;
+my $have_dbd_csv = 0;
+
+eval {
+    require DBI;
+    $have_dbi = DBI->VERSION();
+};
+eval {
+    require DBD::CSV;
+    $have_dbd_csv = DBD::CSV->VERSION();
+};
+
+sub slurp {
+    my $fn = $_[0];
+    my $fh;
+    open( $fh, "<", $fn ) or die "Can't open $fn for reading: $!";
+    local $/;
+    my $file_content = <$fh>;
+    close( $fh );
+    chomp $file_content;
+    return $file_content;
+}
+
+sub expand_cfg {
+    my ($cfgcnt, $row_hash) = @_;
+    my $rowkeys = join( "|", keys %$row_hash );
+    $cfgcnt =~ s/@($rowkeys)[@]/$row_hash->{$1}/ge;
+    return $cfgcnt;
+}
+
+sub run_test {
+    my ($cfgcnt, $row_hash) = @_;
+    defined($row_hash) and ref($row_hash) eq "HASH" and $cfgcnt = expand_cfg($cfgcnt, $row_hash);
+    ($cfgcnt =~ m/(@\w+[@])/) and BAIL_OUT( "Unexpanded $1 in configuration" );
+
+    my $cfg = eval $cfgcnt;
+    $@ and die $@;
+
+    foreach my $plugin (@$cfg) {
+        my $done;
+
+        defined($plugin->{CMD}) and $done = plugin_ok($plugin);
+        defined($plugin->{OLDCMD}) and defined($plugin->{NEWCMD}) and $done = plugin_cmp_ok($plugin);
+
+        defined($done) or die "Unexpected plugin: " . Dumper($plugin);
+    }
+}
+
+my %cmdOptions = ();
+GetOptions( \%cmdOptions,
+            "help|h" => sub { pod2usage(0); },
+            ( $have_dbi && defined($ENV{DBI_DSN}) ? ("table|t=s") : () ),
+            ( $have_dbd_csv ? ("csv-file|f=s", "csv-dir|d=s", "csv-ext|e=s") : () ),
+          ) or exit(1);
+
+chdir($FindBin::Bin);
+
+if( defined( $cmdOptions{'csv-dir'} ) && !defined( $cmdOptions{'csv-file'} ) && !defined($cmdOptions{'table'}) && -f File::Spec->catfile( $cmdOptions{'csv-dir'}, "@test-name@.csv" ) )
+{
+    $cmdOptions{'csv-file'} = "@test-name@";
+}
+
+if( !defined( $cmdOptions{'csv-file'} ) && !defined($cmdOptions{'table'}) && -f "@test-name@.csv" )
+{
+    $cmdOptions{'csv-dir'} = ".";
+    $cmdOptions{'csv-file'} = "@test-name@";
+}
+
+if( defined( $cmdOptions{'csv-file'} ) && !defined( $cmdOptions{'csv-dir'} ) )
+{
+    $cmdOptions{'csv-dir'} = dirname( $cmdOptions{"csv-file"} );
+    $cmdOptions{"csv-file"} = basename( $cmdOptions{"csv-file"} );
+}
+
+my $cfgfile = "$FindBin::Bin/@test-name@.cfg";
+defined $ENV{NAGIOS_PLUGIN_TEST_CFG} and -f $ENV{NAGIOS_PLUGIN_TEST_CFG} and $cfgfile = $ENV{NAGIOS_PLUGIN_TEST_CFG};
+
+my $cfgcnt = slurp( $cfgfile );
+
+if( defined( $cmdOptions{"table"} ) ) {
+    my $table = $cmdOptions{"table"};
+    my $dbh = DBI->connect( undef, undef, undef ) or BAIL_OUT( "Can't connect to $ENV{DBI_DSN} - $DBI::errstr" );
+    my $sth = $dbh->prepare( "SELECT * FROM $table" ) or BAIL_OUT( "Can't prepare select statement 'SELECT * FROM $table': " . $dbh->errstr() );
+    $sth->execute() or BAIL_OUT( "Can't execute select statement 'SELECT * FROM $table': " . $sth->errstr() );
+    my $row_hash;
+    while( $row_hash = $sth->fetchrow_hashref() ) {
+        run_test( $cfgcnt, $row_hash );
+    }
+}
+elsif( defined( $cmdOptions{"csv-file"} ) ) {
+    my $csvdir = $cmdOptions{'csv-dir'};
+    my $csvtbl = $cmdOptions{"csv-file"};
+    my $csvext = $cmdOptions{"csv-ext"} || ".csv/r";
+    my $dbh = DBI->connect( "DBI:CSV:", undef, undef, { f_dir => $csvdir, f_ext => $csvext, }) or BAIL_OUT( "Can't connect to DBD::CSV - $DBI::errstr" );
+    my $sth = $dbh->prepare( "SELECT * FROM $csvtbl" ) or BAIL_OUT( "Can't prepare select statement 'SELECT * FROM $csvtbl': " . $dbh->errstr() );
+    $sth->execute() or BAIL_OUT( "Can't execute select statement 'SELECT * FROM $csvtbl': " . $sth->errstr() );
+    my $row_hash;
+    while( $row_hash = $sth->fetchrow_hashref() ) {
+        run_test( $cfgcnt, $row_hash );
+    }
+}
+else {
+    run_test($cfgcnt);
+}
+
+done_testing();
+
+=head1 NAME
+
+run_tests (script) - runs the @test-name@ tests
+
+=head1 DESCRIPTION
+
+This I<run_tests> script runs the @test-name@ tests for smart-snmpd-nagios-plugins.
+
+=head1 SYNOPSIS
+
+  # simply runs tests from $NAGIOS_PLUGIN_TEST_CFG or @test-name@.cfg
+  run_tests.t
+  # replaces @col_name@ in config-file with the content of each line in csv file
+  run_tests.t -c file.csv
+  # replaces @col_name@ in config-file with the content of each line in given table
+  env DBI_DSN=... DBI_USER=... DBI_PASS=... run_tests.t -t table
+
+=head1 OPTIONS
+
+=over 8
+
+=item C<--csv-file|-c>
+
+Specifies .csv file with default specification to replace values in the
+configuration file and run the tests once for each row in the given file
+of comma separated values.
+
+This option is available only with L<DBI> and L<DBD::CSV> installed.
+
+=item C<--table|-t>
+
+Specifies database table to replace values in the configuration file and
+run the tests once for each row in the given table.
+
+This option is available only with L<DBI> installed and the environment
+variable C<DBI_DSN> set. Set C<DBI_USER> and C<DBI_PASS> etc. as desired.
+See L<DBI/DBI ENVIRONMENT VARIABLES> for a list of valid environment
+variables.
+
+=back
+
+=head1 AUTHOR
+
+Jens Rehsack <sno@NetBSD.org>
+
+=cut

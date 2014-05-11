@@ -1,0 +1,10 @@
+[
+	{ NAME => undef, SUCCEED => 1,
+          OLDCMD => [ "@bindir@/check_cpu_by_snmp", "-H", "@host_ip@", "-p", "@port@", "-C", "@community@" ],
+          NEWCMD => [ "@bindir@/check_cpu_by_snmp", "-H", "@host_ip@", "-p", "@port+2@", "-C", "@community@" ],
+        },
+	{ NAME => undef, SUCCEED => 1,
+          OLDCMD => [ "@bindir@/check_load_by_snmp", "-H", "@host_ip@", "-p", "@port@", "-C", "@community@", "-w", "40,80,160", "-c", "80,160,320" ],
+          NEWCMD => [ "@bindir@/check_load_by_snmp", "-H", "@host_ip@", "-p", "@port+2@", "-C", "@community@", "-w", "40,80,160", "-c", "80,160,320" ],
+        },
+]

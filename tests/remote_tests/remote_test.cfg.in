@@ -1,0 +1,16 @@
+[
+	{ NAME => undef, SUCCEED => 1, CMD => [ "@top_builddir@/src/check_cpu_by_snmp", "-H", "@host@", "-p", "@port@", "-C", "@community@", "-V", "@snmp_version@" ] },
+	{ NAME => undef, SUCCEED => 1, CMD => [ "@top_builddir@/src/check_cpu_by_snmp", "-H", "@host@", "-p", "@port@", "-C", "@community@", "-V", "@snmp_version@", "-s", "smart-snmpd" ] },
+	{ NAME => undef, SUCCEED => 1, CMD => [ "@top_builddir@/src/check_cpu_by_snmp", "-H", "@host@", "-p", "@port@", "-C", "@community@", "-V", "@snmp_version@", "-s", "@daemon_type@" ] },
+	{ NAME => undef, SUCCEED => 0, CMD => [ "@top_builddir@/src/check_cpu_by_snmp", "-H", "@host@", "-p", "@port@", "-C", "@community@", "-V", "@snmp_version@", "-s", "foo" ] },
+	{ NAME => undef, SUCCEED => 1, CMD => [ "@top_builddir@/src/check_fs_by_snmp", "-H", "@host@", "-p", "@port@", "-C", "@community@", "-V", "@snmp_version@", "-n", "/", "-w", "80%", "-c", "90%", "-s", "@daemon_type@" ] },
+	{ NAME => undef, SUCCEED => 1, CMD => [ "@top_builddir@/src/check_mem_by_snmp", "-H", "@host@", "-p", "@port@", "-C", "@community@", "-V", "@snmp_version@" ] },
+	{ NAME => undef, SUCCEED => 1, CMD => [ "@top_builddir@/src/check_swap_by_snmp", "-H", "@host@", "-p", "@port@", "-C", "@community@", "-V", "@snmp_version@" ] },
+	{ NAME => undef, SUCCEED => 1, CMD => [ "@top_builddir@/src/check_user_cnt_by_snmp", "-H", "@host@", "-p", "@port@", "-C", "@community@", "-V", "@snmp_version@", "-w", "10", "-c", "20" ] },
+	{ NAME => undef, SUCCEED => 1, CMD => [ "@top_builddir@/src/check_proc_cnt_by_snmp", "-H", "@host@", "-p", "@port@", "-C", "@community@", "-V", "@snmp_version@" ] },
+	{ NAME => undef, SUCCEED => 1, CMD => [ "@top_builddir@/src/check_snmp_daemon_avail", "-H", "@host@", "-p", "@port@", "-C", "@community@", "-V", "@snmp_version@" ] },
+	{ NAME => undef, SUCCEED => 1, CMD => [ "@top_builddir@/src/check_snmp_daemon_avail", "-H", "@host@", "-p", "@port@", "-C", "@community@", "-V", "@snmp_version@", "-s", "smart-snmpd" ] },
+	{ NAME => undef, SUCCEED => 1, CMD => [ "@top_builddir@/src/check_snmp_agent_avail", "-H", "@host@", "-p", "@port@", "-C", "@community@", "-V", "@snmp_version@" ] },
+	{ NAME => undef, SUCCEED => 1, CMD => [ "@top_builddir@/src/check_snmp_agent_avail", "-H", "@host@", "-p", "@port@", "-C", "@community@", "-V", "@snmp_version@", "-w", "25m,150,150", "-c", "55m,300,300" ] },
+	{ NAME => undef, SUCCEED => 1, CMD => [ "@top_builddir@/src/check_load_by_snmp", "-H", "@host@", "-p", "@port@", "-C", "@community@", "-V", "@snmp_version@", "-w", "40,80,160", "-c", "80,160,320" ] },
+]

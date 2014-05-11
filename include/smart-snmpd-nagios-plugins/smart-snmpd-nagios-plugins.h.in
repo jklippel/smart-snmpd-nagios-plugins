@@ -1,0 +1,52 @@
+/**
+ * Copyright 2010,2011 Matthias Haag, Jens Rehsack
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ *
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#ifndef __SMART_SNMPD_NAGIOS_CHECKS_H_INCLUDED__
+#define __SMART_SNMPD_NAGIOS_CHECKS_H_INCLUDED__
+
+#define SSNC_VERSION_STRING "@VERSION@"
+#define SSNC_VERSION @SSNC_MAJOR_VERSION@
+#define SSNC_RELEASE @SSNC_MINOR_VERSION@
+#define SSNC_PATCHLEVEL @SSNC_MICRO_VERSION@
+
+#if @WITH_VISIBILITY_SUPPORT@
+#define __ssnc_export @SSNC_EXPORT@
+#define __ssnc_import @SSNC_IMPORT@
+#define __ssnc_private @SSNC_PRIVATE@
+#else
+#define __ssnc_export
+#define __ssnc_import
+#define __ssnc_private
+#endif
+
+#if @SSNC_WITH_LIBLOG4CPLUS@
+#define SSNC_WITH_LIBLOG4CPLUS
+#else
+#undef SSNC_WITH_LIBLOG4CPLUS
+#endif
+
+#define SSNC_DEFAULT_CONFIG_FILE SYSCONFDIR "/smart-snmpd.conf"
+#define SSNC_DEFAULT_PID_FILE LOCALSTATEDIR "/run/smart-snmpd.pid"
+#define SSNC_DEFAULT_STATUS_FILE LOCALSTATEDIR "/db/smart-snmpd/status.db"
+#ifndef _NO_LOGGING
+# ifdef SSNC_WITH_LIBLOG4CPLUS
+#  define SSNC_DEFAULT_LOG_PROPERTY_FILE SYSCONFDIR "smart-snmpd-log.properties"
+# else
+#  define SSNC_DEFAULT_LOG_FILE LOCALSTATEDIR "/log/smart-snmpd.log"
+# endif
+#endif
+
+#endif /* __SMART_SNMPD_NAGIOS_CHECKS_H_INCLUDED__ */
